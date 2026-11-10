@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Olist Dashboard</title>
+    <style>
+        body { font-family: sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; max-width: 800px; margin: auto; }
+        h1 { color: #38bdf8; font-size: 1.3rem; }
+        .card { background: #1e293b; padding: 15px; border-radius: 8px; margin: 15px 0; }
+        input, select, button { padding: 6px 10px; border-radius: 5px; border: 1px solid #475569; background: #0f172a; color: #e2e8f0; }
+        button { background: #2563eb; cursor: pointer; }
+        .result { margin-top: 10px; color: #94a3b8; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <h1>Olist Analytics</h1>
+
+    <div class="card">
+        <h3>Выручка за период</h3>
+        <p style="font-size:0.8rem;color:#64748b">Дней в датасете: {{ n_days }}</p>
+        <input type="number" id="a" value="0">
+        <input type="number" id="b" value="100">
+        <button onclick="rev()">Посчитать</button>
+        <div id="r1" class="result"></div>
+    </div>
+
+    <div class="card">
+        <h3>Статистика продавца</h3>
+        <input type="text" id="sid" size="40" placeholder="seller_id">
+        <button onclick="sel()">Найти</button>
+        <div id="r2" class="result"></div>
+    </div>
+
+    <script>
+        async function rev() {
+            const a = document.getElementById('a').value;
+            const b = document.getElementById('b').value;
+            const r = await (await fetch(`/api/revenue?start=${a}&end=${b}`)).json();
+            document.getElementById('r1').textContent = r.error
+                ? 'Ошибка: ' + r.error
+                : `${r.from} — ${r.to}: ${r.total} BRL`;
+        }
+        async function sel() {
+            const id = document.getElementById('sid').value.trim();
+            const r = await (await fetch(`/api/seller/${encodeURIComponent(id)}`)).json();
+            document.getElementById('r2').textContent = r.error
+                ? 'Ошибка: ' + r.error
+                : `Заказов: ${r.orders}, выручка: ${r.revenue} BRL, средняя доставка: ${r.avg_days} дн.`;
+        }
+        async function pth() {
+            const f = document.getElementById('src').value;
+            const t = document.getElementById('dst').value;
+            const k = document.getElementById('k').value;
+            const r = await (await fetch(`/api/paths?from=${f}&to=${t}&k=${k}`)).json();
+            const el = document.getElementById('r3');
+            if (r.error) { el.textContent = 'Ошибка: ' + r.error; return; }
+            if (!r.paths.length) { el.textContent = 'Пути не найдены'; return; }
+            el.innerHTML = r.paths.map((p, i) =>
+                `<div>${i + 1}) ${p.path.join(' → ')} <b>(${p.days} дн.)</b></div>`
+            ).join('');
+        }
+    </script>
+</body>
+</html>
